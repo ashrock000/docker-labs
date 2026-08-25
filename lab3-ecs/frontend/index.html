@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FullStack App</title>
+    <style>
+        body { font-family: Arial; max-width: 600px; margin: 50px auto; padding: 20px; }
+        input { padding: 10px; width: 70%; }
+        button { padding: 10px 20px; margin: 5px; }
+        #output { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>📝 FullStack App</h1>
+    <input type="text" id="textInput" placeholder="Enter text...">
+    <button onclick="sendText()">✅ Enter</button>
+    <button onclick="fetchList()">📋 List</button>
+    <div id="output"></div>
+
+    <script>
+        const BACKEND_URL = 'http://backend:3000';
+
+        async function sendText() {
+            const input = document.getElementById('textInput');
+            const text = input.value.trim();
+            if (!text) return alert('Please enter text');
+            const response = await fetch(`${BACKEND_URL}/api/store`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const data = await response.json();
+            const output = document.getElementById('output');
+            if (data.error) {
+                output.innerHTML = `<p style="color:red;">❌ Error: ${data.error}</p>`;
+                return;
+            }
+            output.innerHTML = `<p style="color:green;">✅ Stored: "${text}" at ${data.timestamp}</p>`;
+            input.value = '';
+        }
+
+        async function fetchList() {
+            const response = await fetch(`${BACKEND_URL}/api/list`);
+            const data = await response.json();
+            const output = document.getElementById('output');
+            if (data.error) {
+                output.innerHTML = `<p style="color:red;">❌ Error: ${data.error}</p>`;
+                return;
+            }
+            if (data.length === 0) {
+                output.innerHTML = '<p>No records found.</p>';
+                return;
+            }
+            output.innerHTML = `<ul>${data.map(row =>
+                `<li><strong>${row.text}</strong> — ${row.timestamp}</li>`
+            ).join('')}</ul>`;
+        }
+    </script>
+</body>
+</html>

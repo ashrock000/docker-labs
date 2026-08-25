@@ -1,0 +1,40 @@
+{
+  "family": "lab1-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::242557074006:role/LabRole",
+  "taskRoleArn": "arn:aws:iam::242557074006:role/LabRole",
+  "containerDefinitions": [
+    {
+      "name": "database",
+      "image": "242557074006.dkr.ecr.us-east-1.amazonaws.com/lab1-database:latest",
+      "essential": true,
+      "environment": []
+    },
+    {
+      "name": "backend",
+      "image": "242557074006.dkr.ecr.us-east-1.amazonaws.com/lab1-backend:latest",
+      "essential": true,
+      "environment": [
+        {"name": "DB_HOST", "value": "database"},
+        {"name": "DB_USER", "value": "postgres"},
+        {"name": "DB_PASSWORD", "value": "postgres"},
+        {"name": "DB_NAME", "value": "fullstackdb"},
+        {"name": "PORT", "value": "3000"}
+      ]
+    },
+    {
+      "name": "frontend",
+      "image": "242557074006.dkr.ecr.us-east-1.amazonaws.com/lab1-frontend:latest",
+      "essential": true,
+      "portMappings": [
+        {"containerPort": 8080, "hostPort": 8080, "protocol": "tcp"}
+      ],
+      "environment": [
+        {"name": "BACKEND_URL", "value": "http://backend:3000"}
+      ]
+    }
+  ]
+}

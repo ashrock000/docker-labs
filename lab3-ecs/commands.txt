@@ -1,0 +1,40 @@
+# Lab 3: AWS ECR + ECS Fargate Commands
+
+# 1. Create ECR Repositories
+aws ecr create-repository --repository-name lab1-frontend
+aws ecr create-repository --repository-name lab1-backend
+aws ecr create-repository --repository-name lab1-database
+
+# 2. Login to ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 242557074006.dkr.ecr.us-east-1.amazonaws.com
+
+# 3. Tag Images
+docker tag lab1-frontend:latest 242557074006.dkr.ecr.us-east-1.amazonaws.com/lab1-frontend:latest
+docker tag lab1-backend:latest 242557074006.dkr.ecr.us-east-1.amazonaws.com/lab1-backend:latest
+docker tag lab1-database:latest 242557074006.dkr.ecr.us-east-1.amazonaws.com/lab1-database:latest
+
+# 4. Push Images
+docker push 242557074006.dkr.ecr.us-east-1.amazonaws.com/lab1-frontend:latest
+docker push 242557074006.dkr.ecr.us-east-1.amazonaws.com/lab1-backend:latest
+docker push 242557074006.dkr.ecr.us-east-1.amazonaws.com/lab1-database:latest
+
+# 5. Create ECS Cluster
+aws ecs create-cluster --cluster-name lab1-cluster
+
+# 6. Register Task Definition
+aws ecs register-task-definition --cli-input-json file://task-definition.json
+
+# 7. Create Service
+aws ecs create-service \
+  --cluster lab1-cluster \
+  --service-name lab1-service \
+  --task-definition lab1-task \
+  --launch-type FARGATE \
+  --network-configuration "awsvpcConfiguration={subnets=[subnet-0f9628633552e07fe,subnet-07222ef9e0971cd20],securityGroups=[sg-06fc04904d64d4ca2],assignPublicIp=ENABLED}" \
+  --desired-count 1
+
+# 8. Get Public IP
+TASK_ARN=$(aws ecs list-tasks --cluster lab1-cluster --service-name lab1-service --query "taskArns[0]" --output text)
+ENI_ID=$(aws ecs describe-tasks --cluster lab1-cluster --tasks $TASK_ARN --query "tasks[0].attachments[0].details[?name=='networkInterfaceId'].value" --output text)
+PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query "NetworkInterfaces[0].Association.PublicIp" --output text)
+echo "Public IP: $PUBLIC_IP"
